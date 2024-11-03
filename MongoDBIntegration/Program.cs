@@ -1,4 +1,5 @@
 using MongoDBIntegration.Data;
+using MongoDBIntegration.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<MongoDbService>(); 
+builder.Services.AddSingleton<MongoDbService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+
 
 var app = builder.Build();
 

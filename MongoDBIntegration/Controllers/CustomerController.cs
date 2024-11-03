@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using MongoDBIntegration.Data;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDBIntegration.Entities;
-using MongoDB.Driver; 
+using MongoDBIntegration.Services;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MongoDBIntegration.Controllers
 {
@@ -10,25 +10,23 @@ namespace MongoDBIntegration.Controllers
     [ApiController]
     public class CustomerController : ControllerBase
     {
+        private readonly ICustomerService _customerService;
 
-        private readonly IMongoCollection<Customer> _customers;
-
-        public CustomerController(MongoDbService mongoDBService)
+        public CustomerController(ICustomerService customerService)
         {
-            _customers = mongoDBService.Database.GetCollection<Customer>("Customers");
+            _customerService = customerService;
         }
 
         [HttpGet]
-        public async Task<IEnumerable<Customer>> Get ()
+        public async Task<IEnumerable<Customer>> Get()
         {
-            return await _customers.Find(customer => true).ToListAsync();
+            return await _customerService.GetAllCustomersAsync();
         }
-
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> GetById(string id)
         {
-            var customer = await _customers.Find<Customer>(customer => customer.Id == id).FirstOrDefaultAsync();
+            var customer = await _customerService.GetCustomerByIdAsync(id);
 
             if (customer == null)
             {
@@ -41,39 +39,34 @@ namespace MongoDBIntegration.Controllers
         [HttpPost]
         public async Task<ActionResult<Customer>> Create(Customer customer)
         {
-            await _customers.InsertOneAsync(customer);
+            await _customerService.CreateCustomerAsync(customer);
             return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update(string id, Customer customerIn)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, Customer customer)
         {
-            var customer = await _customers.Find<Customer>(customer => customer.Id == id).FirstOrDefaultAsync();
+            var success = await _customerService.UpdateCustomerAsync(id, customer);
 
-            if (customer == null)
+            if (!success)
             {
                 return NotFound();
             }
 
-            await _customers.ReplaceOneAsync(customer => customer.Id == id, customerIn);
             return Ok();
         }
 
         [HttpDelete("{id}")]
-
         public async Task<IActionResult> Delete(string id)
         {
-            var customer = await _customers.Find<Customer>(customer => customer.Id == id).FirstOrDefaultAsync();
+            var success = await _customerService.DeleteCustomerAsync(id);
 
-            if (customer == null)
+            if (!success)
             {
                 return NotFound();
             }
 
-            await _customers.DeleteOneAsync(customer => customer.Id == id);
             return Ok();
         }
-
-
     }
 }
